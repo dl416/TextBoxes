@@ -41,11 +41,13 @@ class ReCTS(Dataset):
         lines = []
         for line in label_json["lines"]:
             points = []
-            for i, point in enumerate(line['points']):
+            x1, y1, x2, y2, x3, y3, x4, y4 = line['points']
+            gt = [min(x1, x2, x3, x4), min(y1, y2, y3, y4), max(x1, x2, x3, x4), max(y1, y2, y3, y4)]
+            for i, point in enumerate(gt):
                 if i % 2 == 0:
-                    points.append(point / w * self.img_size[0])
+                    points.append(point / w * self.img_size[0] / self.img_size[0])
                 else:
-                    points.append(point / h * self.img_size[1])
+                    points.append(point / h * self.img_size[1] / self.img_size[1])
             lines.append(points)
 
         return image, lines
@@ -57,4 +59,6 @@ if __name__ == "__main__":
     max_item = 0
     for bacth_data in dataLoader:
         images, lines = bacth_data
-        print(images.shape, len(lines[0]))
+        print(images.shape, lines[0][0])
+        lines = torch.cat(lines, 0)
+        print(lines.shape)

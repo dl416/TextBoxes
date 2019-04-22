@@ -23,18 +23,26 @@ class TextBoxes(nn.Module):
             self._initialize_weights()
 
     def forward(self, x):
-        out_boxes = []
+        out_boxes = None
         textboxes = cfg['TextBoxes']
         bone_index = 0
         boxes_index = 0
         for v in textboxes:
             if isinstance(v, str) and (v == 'B' or v == 'BE'):
                 box = self.boxes[boxes_index](x)
-                out_boxes.append(box)
+                box = box.permute(2, 3, 0, 1)
+                _, _, batch, channel = box.size()
+                box = box.reshape(-1, batch, channel)
+                if out_boxes is None:
+                    out_boxes = box
+                else:
+                    out_boxes = torch.cat((out_boxes, box), 0)
                 boxes_index += 1
             else:
                 x = self.bone[bone_index](x)
                 bone_index += 1
+        # change to batch, local, confidence and boxes
+        out_boxes = out_boxes.permute(1, 0, 2)
         return out_boxes
 
     def make_layers(self, cfg):
@@ -82,9 +90,4 @@ if __name__ == "__main__":
     x = torch.randn(10, 3, 300, 300).to("cuda")
     out = tbox(x)
     print(len(out))
-    print(out[0].shape)
-    print(out[1].shape)
-    print(out[2].shape)
-    print(out[3].shape)
-    print(out[4].shape)
-    print(out[5].shape)
+    print(out.shape)
